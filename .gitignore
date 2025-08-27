@@ -1,0 +1,90 @@
+# 환경 설정
+.env
+.env.local
+.env.*.local
+
+# 데이터 및 로그
+data/
+logs/
+experiments/
+checkpoints/
+notebooks/.ipynb_checkpoints/
+*.log
+
+# 캐시 및 임시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker 관련
+*.pid
+docker-compose.override.yml
+
+# Isaac Sim/Lab 캐시
+.cache/
+.local/
+.nvidia/
+.omniverse/
+
+# 모델 및 체크포인트
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+*.pb
+*.h5
+
+# 대용량 파일
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.iso
+*.dmg
+
+# WandB
+wandb/
+.wandb/
+
+# TensorBoard
+tensorboard/
+runs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# 테스트 데이터
+test_data/
+test_output/
+
+# 백업 파일
+*.bak
+*.backup
+*.tmp
+
+# OS 관련
+Thumbs.db
+.DS_Store
+.directory
+
+# 비밀 정보
+*.key
+*.pem
+credentials/
+secrets/
