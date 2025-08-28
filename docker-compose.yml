@@ -1,11 +1,12 @@
 version: '3.8'
 
 services:
+  # Main service for building and pushing to Docker Hub
   isaac-lab:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: isaac-lab:5.0.0
+    image: bys724/isaac-lab:latest
     container_name: isaac-lab
     hostname: isaac-lab
     runtime: nvidia
@@ -16,33 +17,17 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
       - QT_X11_NO_MITSHM=1
-      # WandB 설정 (선택사항)
       - WANDB_API_KEY=${WANDB_API_KEY:-}
-      - WANDB_PROJECT=${WANDB_PROJECT:-isaac-lab-experiments}
+      - WANDB_PROJECT=${WANDB_PROJECT:-isaac-lab}
     volumes:
-      # X11 소켓 마운트 (GUI 지원)
+      # X11 socket for GUI support
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      
-      # Isaac Lab 서브모듈 마운트
-      - ./IsaacLab:/isaac-sim/IsaacLab:rw
-      
-      # 캐시 디렉토리들 (호스트의 ~/docker/isaac-sim/cache 경로 사용)
-      - ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw
-      - ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw
-      - ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw
-      - ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw
-      - ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw
-      
-      # 로그 및 데이터
-      - ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw
-      - ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw
-      - ~/docker/isaac-sim/documents:/root/Documents:rw
-      
+      # Optional: Mount workspace for testing
+      - ./workspace:/workspace:rw
     network_mode: host
     privileged: true
     stdin_open: true
     tty: true
-    entrypoint: /entrypoint.sh
     command: bash
     deploy:
       resources:

@@ -1,97 +1,88 @@
-# Isaac Docker 프로젝트 가이드 (Claude Code용)
+# Isaac Docker 프로젝트 개요 (AI Assistant Reference)
 
-## 프로젝트 개요
-이 저장소는 NVIDIA Isaac Sim과 Isaac Lab을 위한 Docker 기반 개발 환경입니다.
+## 프로젝트 목적
+이 저장소는 NVIDIA Isaac Lab 환경을 Docker 이미지로 패키징하여 배포하는 것이 주요 목적입니다.
+- **배포 대상**: Docker Hub (`bys724/isaac-lab`)
+- **사용자**: 로봇 학습 및 시뮬레이션 프로젝트를 진행하는 개발자/연구자
+- **핵심 가치**: 복잡한 Isaac Lab 환경을 사전 구성된 이미지로 제공하여 빠른 프로젝트 시작 지원
 
-## 주요 컴포넌트
+## 프로젝트 특성
 
-### Isaac Sim + Isaac Lab 통합 환경
-- 베이스 이미지: `nvcr.io/nvidia/isaac-sim:5.0.0`
-- Isaac Lab: GitHub 서브모듈로 관리
-- 강화학습 라이브러리 포함 (stable-baselines3, rl-games 등)
+### 기반 기술
+- **Isaac Sim 5.0.0**: NVIDIA의 고성능 물리 시뮬레이션 플랫폼
+- **Isaac Lab**: 로봇 학습을 위한 모듈식 프레임워크 (서브모듈로 관리)
+- **Docker**: 환경 컨테이너화 및 배포
 
-## 디렉토리 구조
-```
-isaac-docker/
-├── docker/           # Docker 설정 파일
-│   ├── Dockerfile   # Isaac Lab 도커 이미지
-│   └── entrypoint.sh # 컨테이너 진입점 스크립트
-├── IsaacLab/        # Isaac Lab 서브모듈 (공식 저장소)
-├── config/          # 환경 설정
-├── docker-compose.yml # Docker Compose 설정
-└── .env            # 환경 변수
-```
+### 주요 구성 요소
+1. **프로덕션 이미지**: Isaac Lab이 사전 설치된 즉시 사용 가능한 환경
+2. **의존성 관리**: requirements.txt를 통한 명확한 패키지 버전 관리
+3. **확장성**: 다른 프로젝트에서 베이스 이미지로 활용 가능한 구조
 
-## 주요 명령어
+## 개발 원칙
 
-### 초기 설정
-```bash
-# Isaac Lab 서브모듈 초기화
-git submodule update --init --recursive
-```
+### 이미지 설계
+- 배포 이미지는 최소한의 기능만 포함 (bloat 방지)
+- entrypoint는 간단하게 유지 (프로젝트별 커스터마이징 고려)
+- 빌드 시점에 Isaac Lab 설치 완료 (런타임 오버헤드 최소화)
 
-### Docker 관리
-```bash
-docker-compose build isaac-lab    # 이미지 빌드
-docker-compose up -d isaac-lab     # 컨테이너 시작
-docker-compose down               # 컨테이너 중지
-docker-compose logs -f isaac-lab  # 로그 확인
-```
+### 재사용성
+- 다른 프로젝트가 이 이미지를 베이스로 확장할 수 있도록 설계
+- 템플릿 파일 제공 (entrypoint.example.sh)
+- 명확한 환경 변수와 설정 방식
 
-### Isaac Lab 사용
-```bash
-# 컨테이너 접속
-docker exec -it isaac-lab bash
+### 유지보수
+- Isaac Lab은 서브모듈로 관리 (업스트림 추적 용이)
+- 의존성은 requirements.txt로 중앙 관리
+- 버전 태깅 전략 활용 (latest, semantic versioning, isaac-sim 버전)
 
-# Isaac Lab 디렉토리로 이동
-cd /isaac-sim/IsaacLab
+## 사용 시나리오
 
-# 예제 실행
-./isaaclab.sh -p source/standalone/tutorials/00_sim/create_empty.py
+### 이미지 빌드 및 배포 (관리자)
+1. Isaac Lab 서브모듈 업데이트
+2. Docker 이미지 빌드
+3. Docker Hub 배포
+4. 버전 태깅 및 문서 업데이트
 
-# 강화학습 훈련
-./isaaclab.sh -p source/standalone/workflows/skrl/train.py --task Isaac-Ant-v0 --headless
-```
+### 이미지 활용 (최종 사용자)
+1. **직접 사용**: 간단한 실험이나 테스트
+2. **프로젝트 통합**: docker-compose.yml에서 베이스 이미지로 활용
+3. **커스텀 빌드**: 프로젝트별 Dockerfile에서 FROM으로 확장
 
-## 환경 변수
-- `ACCEPT_EULA`: NVIDIA EULA 동의 (필수: Y)
-- `DISPLAY`: GUI 디스플레이 설정
-- `NVIDIA_VISIBLE_DEVICES`: GPU 설정
-- `WANDB_API_KEY`: WandB 연동 (선택)
+## 중요 고려사항
 
-## GPU 요구사항
-- NVIDIA GPU (RTX 3060 이상)
-- NVIDIA Driver 525.60.11+
-- CUDA 11.8+
+### GPU 및 디스플레이
+- NVIDIA GPU와 드라이버 호환성 필수
+- X11 포워딩 설정 (GUI 애플리케이션용)
+- CUDA 환경 변수 적절히 설정
 
-## 트러블슈팅
+### 성능 최적화
+- 대용량 시뮬레이션 데이터 생성 고려
+- GPU 메모리 관리 중요
+- 캐시 디렉토리 적절히 마운트
 
-### X11 오류
-```bash
-xhost +local:docker
-```
+### 라이선스
+- Isaac Sim/Lab 사용 시 NVIDIA EULA 동의 필수
+- 오픈소스 의존성 라이선스 확인
 
-### GPU 인식 실패
-```bash
-nvidia-smi  # GPU 상태 확인
-docker run --rm --gpus all nvidia/cuda:11.8.0-base nvidia-smi
-```
+## AI Assistant 작업 가이드
 
-## 테스트 명령어
-```bash
-# GPU 테스트
-docker-compose run --rm isaac-sim nvidia-smi
+### 코드 수정 시
+- 배포 목적에 맞는지 항상 고려
+- 다른 프로젝트에서의 재사용성 검토
+- 불필요한 복잡성 추가 지양
 
-# Isaac Sim 버전 확인
-docker-compose run --rm isaac-sim /isaac-sim/isaac-sim.sh --version
-```
+### 문서 작성 시
+- README.md: 사용자 대상 실용적 가이드
+- CLAUDE.md: 프로젝트 컨텍스트와 설계 철학
+- 코드 주석: 필수적인 설명만 간결하게
 
-## 개발 워크플로우
-1. Isaac Lab 서브모듈에서 직접 코드 수정
-2. Docker 컨테이너에서 테스트 실행
-3. 변경사항은 호스트와 자동 동기화 (볼륨 마운트)
+### 의존성 관리
+- 새 패키지 추가 시 requirements.txt 업데이트
+- 버전 고정으로 재현성 보장
+- Isaac Lab 자체 의존성과 충돌 주의
 
-## 주의사항
-- GPU 메모리 관리 필요
-- 대용량 시뮬레이션 데이터 생성 가능
-- X11 포워딩 설정 필요 (GUI 사용시)
+## 프로젝트 진화 방향
+- Isaac Sim 버전 업데이트 추적
+- Isaac Lab 새 기능 통합
+- 더 많은 RL 프레임워크 지원 고려
+- 멀티 스테이지 빌드로 이미지 크기 최적화 가능

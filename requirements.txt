@@ -1,0 +1,24 @@
+# Isaac Lab Core Requirements
+# These packages are pre-installed in the Docker image
+
+# Isaac Lab dependencies (respect version constraints)
+numpy<2  # Isaac Lab requires numpy<2
+pillow==11.2.1  # Isaac Lab requires specific version
+toml  # Required for Isaac Lab
+
+# RL Frameworks
+rl-games==1.6.1
+stable-baselines3==2.3.2
+skrl[torch]
+
+# Experiment Tracking
+tensorboard
+wandb
+
+# Additional ML Tools (optional but useful)
+# gymnasium
+# ray[rllib]
+# sb3-contrib
+
+# Note: Isaac Lab itself is installed via ./isaaclab.sh --install
+# Note: PyTorch and CUDA dependencies are handled by Isaac Sim base image

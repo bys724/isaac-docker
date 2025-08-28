@@ -1,13 +1,15 @@
 # Isaac Lab Docker Image
 # NVIDIA Isaac Lab 개발 환경을 위한 Docker 이미지
+# Docker Hub: bys724/isaac-lab
 # Based on Isaac Sim 5.0.0
 
 FROM nvcr.io/nvidia/isaac-sim:5.0.0
 
 # 메타데이터 설정
-LABEL maintainer="isaac-lab-docker"
-LABEL description="Isaac Lab development environment for robotics learning"
+LABEL maintainer="bys724"
+LABEL description="Production-ready Isaac Lab environment for robotics development"
 LABEL version="1.0.0"
+LABEL org.opencontainers.image.source="https://github.com/bys724/isaac-docker"
 
 # 환경 변수 설정
 ENV ACCEPT_EULA=Y
@@ -54,6 +56,26 @@ RUN mkdir -p /isaac-sim/kit/cache \
     /root/.nvidia-omniverse/logs \
     /root/.local/share/ov/data \
     /root/Documents
+
+# Isaac Lab 서브모듈 복사
+COPY IsaacLab /isaac-sim/IsaacLab
+
+# Requirements 파일 복사
+COPY requirements.txt /tmp/requirements.txt
+
+# Isaac Lab 설치
+WORKDIR /isaac-sim/IsaacLab
+RUN ./isaaclab.sh --install && \
+    # Pip 업그레이드 (주의: 너무 최신 버전은 호환성 문제 가능)
+    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip install --upgrade "pip<24.2" && \
+    # Requirements 설치 (의존성 순서 중요)
+    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
+    # 설치 완료 마커 생성
+    touch /isaac-sim/IsaacLab/.isaac_lab_installed && \
+    # 설치 검증
+    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -c "import toml; import isaaclab; print('✓ Isaac Lab installation verified')" && \
+    # Cleanup
+    rm /tmp/requirements.txt
 
 # 엔트리포인트 스크립트 복사
 COPY docker/entrypoint.sh /entrypoint.sh
