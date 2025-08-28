@@ -1,48 +1,18 @@
 version: '3.8'
 
 services:
-  isaac-sim:
-    build:
-      context: .
-      dockerfile: docker/isaac-sim/Dockerfile
-    image: isaac-sim:latest
-    container_name: isaac-sim-dev
-    hostname: isaac-sim
-    runtime: nvidia
-    environment:
-      - DISPLAY=${DISPLAY}
-      - ACCEPT_EULA=Y
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-      - QT_X11_NO_MITSHM=1
-    volumes:
-      # X11 소켓 마운트 (GUI 지원)
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # 데이터 및 로그 디렉토리
-      - ./data:/workspace/data
-      - ./logs:/workspace/logs
-      # 개발 코드 마운트
-      - ./src:/workspace/src
-      # Isaac Sim 캐시
-      - isaac-sim-cache:/root/.cache/nvidia
-      - isaac-sim-data:/root/.local/share/ov/data
-    network_mode: host
-    privileged: true
-    stdin_open: true
-    tty: true
-    command: bash
-
   isaac-lab:
     build:
       context: .
-      dockerfile: docker/isaac-lab/Dockerfile
-    image: isaac-lab:latest
-    container_name: isaac-lab-dev
+      dockerfile: docker/Dockerfile
+    image: isaac-lab:5.0.0
+    container_name: isaac-lab
     hostname: isaac-lab
     runtime: nvidia
     environment:
-      - DISPLAY=${DISPLAY}
+      - DISPLAY=${DISPLAY:-:0}
       - ACCEPT_EULA=Y
+      - PRIVACY_CONSENT=Y
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
       - QT_X11_NO_MITSHM=1
@@ -52,21 +22,27 @@ services:
     volumes:
       # X11 소켓 마운트 (GUI 지원)
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # 데이터, 로그, 실험 디렉토리
-      - ./data:/workspace/data
-      - ./logs:/workspace/logs
-      - ./experiments:/workspace/experiments
-      # 개발 코드 마운트
-      - ./src:/workspace/src
-      # Isaac Sim/Lab 캐시
-      - isaac-lab-cache:/root/.cache/nvidia
-      - isaac-lab-data:/root/.local/share/ov/data
-      # 모델 체크포인트
-      - ./checkpoints:/workspace/checkpoints
+      
+      # Isaac Lab 서브모듈 마운트
+      - ./IsaacLab:/isaac-sim/IsaacLab:rw
+      
+      # 캐시 디렉토리들 (호스트의 ~/docker/isaac-sim/cache 경로 사용)
+      - ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw
+      - ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw
+      - ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw
+      - ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw
+      - ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw
+      
+      # 로그 및 데이터
+      - ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw
+      - ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw
+      - ~/docker/isaac-sim/documents:/root/Documents:rw
+      
     network_mode: host
     privileged: true
     stdin_open: true
     tty: true
+    entrypoint: /entrypoint.sh
     command: bash
     deploy:
       resources:
@@ -75,46 +51,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
-  # Jupyter Lab 서비스 (선택사항)
-  jupyter:
-    build:
-      context: .
-      dockerfile: docker/isaac-lab/Dockerfile
-    image: isaac-lab:latest
-    container_name: isaac-jupyter
-    hostname: isaac-jupyter
-    runtime: nvidia
-    environment:
-      - DISPLAY=${DISPLAY}
-      - ACCEPT_EULA=Y
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-      - JUPYTER_ENABLE_LAB=yes
-    volumes:
-      - ./notebooks:/workspace/notebooks
-      - ./data:/workspace/data
-      - ./src:/workspace/src
-      - ./experiments:/workspace/experiments
-    ports:
-      - "8888:8888"
-    network_mode: bridge
-    command: >
-      bash -c "jupyter lab --ip=0.0.0.0 --port=8888 --no-browser 
-      --allow-root --NotebookApp.token='' --NotebookApp.password=''"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-volumes:
-  isaac-sim-cache:
-  isaac-sim-data:
-  isaac-lab-cache:
-  isaac-lab-data:
 
 networks:
   default:

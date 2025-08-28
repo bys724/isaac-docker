@@ -5,48 +5,52 @@
 
 ## 주요 컴포넌트
 
-### 1. Isaac Sim
-- 물리 기반 로봇 시뮬레이션 플랫폼
-- 경로: `docker/isaac-sim/`
-- 베이스 이미지: `nvcr.io/nvidia/isaac-sim:4.2.0`
-
-### 2. Isaac Lab  
-- 로봇 학습 프레임워크
-- 경로: `docker/isaac-lab/`
-- 강화학습 및 모방학습 지원
+### Isaac Sim + Isaac Lab 통합 환경
+- 베이스 이미지: `nvcr.io/nvidia/isaac-sim:5.0.0`
+- Isaac Lab: GitHub 서브모듈로 관리
+- 강화학습 라이브러리 포함 (stable-baselines3, rl-games 등)
 
 ## 디렉토리 구조
 ```
 isaac-docker/
 ├── docker/           # Docker 설정 파일
+│   ├── Dockerfile   # Isaac Lab 도커 이미지
+│   └── entrypoint.sh # 컨테이너 진입점 스크립트
+├── IsaacLab/        # Isaac Lab 서브모듈 (공식 저장소)
 ├── config/          # 환경 설정
-├── data/            # 시뮬레이션 데이터
-├── experiments/     # 실험 결과
-├── src/            # 사용자 코드
-└── scripts/        # 유틸리티 스크립트
+├── docker-compose.yml # Docker Compose 설정
+└── .env            # 환경 변수
 ```
 
 ## 주요 명령어
 
+### 초기 설정
+```bash
+# Isaac Lab 서브모듈 초기화
+git submodule update --init --recursive
+```
+
 ### Docker 관리
 ```bash
-docker-compose build         # 이미지 빌드
-docker-compose up -d         # 서비스 시작
-docker-compose down          # 서비스 중지
-docker-compose logs -f       # 로그 확인
+docker-compose build isaac-lab    # 이미지 빌드
+docker-compose up -d isaac-lab     # 컨테이너 시작
+docker-compose down               # 컨테이너 중지
+docker-compose logs -f isaac-lab  # 로그 확인
 ```
 
-### Isaac Sim 실행
+### Isaac Lab 사용
 ```bash
-docker-compose exec isaac-sim bash
-/isaac-sim/isaac-sim.sh
-```
+# 컨테이너 접속
+docker exec -it isaac-lab bash
 
-### Isaac Lab 실행
-```bash
-docker-compose exec isaac-lab bash
-cd /workspace/isaaclab
-python source/standalone/tutorials/[예제파일].py
+# Isaac Lab 디렉토리로 이동
+cd /isaac-sim/IsaacLab
+
+# 예제 실행
+./isaaclab.sh -p source/standalone/tutorials/00_sim/create_empty.py
+
+# 강화학습 훈련
+./isaaclab.sh -p source/standalone/workflows/skrl/train.py --task Isaac-Ant-v0 --headless
 ```
 
 ## 환경 변수
@@ -83,10 +87,9 @@ docker-compose run --rm isaac-sim /isaac-sim/isaac-sim.sh --version
 ```
 
 ## 개발 워크플로우
-1. 코드를 `src/` 디렉토리에 작성
-2. Docker 컨테이너에서 실행
-3. 결과는 `experiments/`에 저장
-4. 로그는 `logs/`에서 확인
+1. Isaac Lab 서브모듈에서 직접 코드 수정
+2. Docker 컨테이너에서 테스트 실행
+3. 변경사항은 호스트와 자동 동기화 (볼륨 마운트)
 
 ## 주의사항
 - GPU 메모리 관리 필요
