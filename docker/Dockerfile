@@ -25,7 +25,9 @@ ENV NVIDIA_DRIVER_CAPABILITIES=all
 WORKDIR /isaac-sim
 
 # 필요한 시스템 패키지 설치 (Isaac Lab 공식 요구사항 포함)
-RUN apt-get update && apt-get install -y \
+# BuildKit 캐시 마운트를 사용하여 apt 캐시 최적화
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
@@ -45,6 +47,7 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    && apt -y autoremove && apt clean autoclean \
     && rm -rf /var/lib/apt/lists/*
 
 # 캐시 디렉토리 생성 (컨테이너 내부)
@@ -64,12 +67,16 @@ COPY IsaacLab /isaac-sim/IsaacLab
 COPY requirements.txt /tmp/requirements.txt
 
 # Isaac Lab 설치
+# pip 캐시를 활용하여 빌드 시간 단축
 WORKDIR /isaac-sim/IsaacLab
-RUN ./isaaclab.sh --install && \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    ./isaaclab.sh --install && \
     # Pip 업그레이드 (주의: 너무 최신 버전은 호환성 문제 가능)
     /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip install --upgrade "pip<24.2" && \
-    # Requirements 설치 (의존성 순서 중요)
-    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
+    # Requirements 설치 (의존성 순서 중요) - 캐시 활용
+    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip install -r /tmp/requirements.txt && \
+    # quadprog 버그 대응 (공식 Dockerfile 참고)
+    /isaac-sim/IsaacLab/_isaac_sim/kit/python/bin/python3 -m pip uninstall -y quadprog || true && \
     # 설치 완료 마커 생성
     touch /isaac-sim/IsaacLab/.isaac_lab_installed && \
     # 설치 검증
